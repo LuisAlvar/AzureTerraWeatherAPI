@@ -1,31 +1,32 @@
-## Azure 
+# Azure 
   Azure Container Apps supports: 
   * Any Linux-based x86-64 (linux/amd64) container image
-  * Containers from any public or private container registry
+  * Containers from any public or private container registryx
 
-## Docker File
-Generated this image painfull using the following method
- Remove the ENTRYPOINT [ "dotnet","WeatherAPI.dll"]
- 
+# Docker File
+You can generated this image painfully using the following method, but first remove any EntryPoint commands - otherwise it will not work. 
+```bash
+docker build--tag weatherapi . 
+
+docker run -it weatherapi              ## to inspect the file system of the image 
+```
+
+Once you have created the docker image you can run the following commands
+```bash
+docker run -p 8080:80 weatherapi  ## to create a container and provide the port mapping
+docker push ##Pushing the image to Docker Hub
+```
+
+Since we are going to utilize the docker image to deploy to Azure. 
+We need to push the final image as an amd64 only [Mainly for Apple ARM systems]
+```bash
  docker build --platform linux/amd64 --tag weatherapi . 
+```
 
- docker run -it image  ## to inspect the file system of the image 
-
- docker run -p 8080:80 weatherapi 
- 
- image_name: aztfweatherapi 
-
- docker push 
-
-
-git remote add origin https://github.com/LuisAlvar/AzureTerraform_WeatherAPI.git
-git branch -M main
-git push -u origin main
-
-# Docker File 
-[a-z0-9]([-a-z0-9]*[a-z0-9])?
-
-
+The name of the docker image must match the following regaular expression: 
+```bash
+a-z0-9]([-a-z0-9]*[a-z0-9])?
+```
 
 # Azure CLI
 On you have installed the Azure CLi run the following command to confirm
@@ -56,7 +57,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "=2.97.0"
+      version = "~> 3.0.2"
     }
   }
 }
@@ -76,7 +77,7 @@ Next objective is to create a Resource Group via Terraform
 ```tf
 resource "azurerm_resource_group" "tf_api_test" {
   name = "tfmainapirg"
-  location = "West US"
+  location = "West US 2"
 }
 ```
 
@@ -94,17 +95,17 @@ azurerm_resource_group.tf_api_test.name
 Next objective is to create an Azure Container Instances via Terraform 
 ```tf
 resource "azurerm_container_group" "tfcg_api_test" {
-  name                = "azure" 
-  location            = azurerm_resource_group.tf_test.location
-  resource_group_name = azurerm_resource_group.tf_test.name
+  name                = "weatherapi" 
+  location            = azurerm_resource_group.tf_api_test.location
+  resource_group_name = azurerm_resource_group.tf_api_test.name
 
-  ip_address_type     = "public"
-  dns_name_label      = "luisenalvar_azureterraform_weatherapi" 
+  ip_address_type     = "Public"
+  dns_name_label      = "archtechorgwa" 
   os_type             = "Linux"
 
   container {
-    name        = "azureterraform_weatherapi"
-    image       = "luisenalvar/azureterraform_weatherapi"
+    name        = "weatherapi"
+    image       = "luisenalvar/azureterraform-weatherapi"
     cpu         = "1.0"
     memory      = "1.0"
     ports {
