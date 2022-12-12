@@ -6,7 +6,7 @@
 # Docker File
 You can generated this image painfully using the following method, but first remove any EntryPoint commands - otherwise it will not work. 
 ```bash
-docker build--tag weatherapi . 
+docker build --tag weatherapi . 
 
 docker run -it weatherapi              ## to inspect the file system of the image 
 ```
@@ -160,3 +160,39 @@ Terraform will perform the following actions:
 Plan: 2 to add, 0 to change, 0 to destroy.
 
 ```
+
+## Azure CLI and Terraform 
+As of right now we are manually loging into Azure via the CLI, then applying terraform to build our plan. [To automate this part, we will allow Terraform to login to our Azure subscription via a Service Principal](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_client_secret). 
+
+A Service Principal is a registered application on Azure Active Directory. 
+At the registered applicaiton level, we will generate a client secret. At the subscription level, we will grant this application Contributor level access. 
+
+Need to set these Envrionment Variables
+ARM_SUBSCRIPTION_ID 
+ARM_CLIENT_SECRET
+ARM_CLIENT_ID 
+ARM_TENANT_ID
+
+Terraform will utilize these environment variables information to communticated with Azure Active Directory and use the Service Principal for authenticate and authorizated the Terraform plan. 
+
+[For Mac]
+
+You need to edit or create ~/.bash_profile 
+Add to file 
+  export environmentvariable=environmentvalue
+Save the file 
+Then you reload the file via **source ~/.bash_profile**
+
+
+[For Windows]
+
+Now you can run terraform plan only and you will get a outlay back. 
+
+## Azure DevOps Pipeline 
+Create a [new project](https://dev.azure.com/) under project settings. 
+
+First go to Project Settings > click on Service connections
+Create a **Docker Registry** service connection
+* provider you username and password and verify 
+Create a **Azure Resoruce Manager** service connection
+* follow the same process 

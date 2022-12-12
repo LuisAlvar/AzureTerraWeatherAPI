@@ -27,7 +27,7 @@ resource "azurerm_container_group" "tfcg_api_test" {
 
   container {
     name        = "weatherapi"
-    image       = "luisenalvar/azureterraform-weatherapi"
+    image       = "luisenalvar/aztfweatherapi"
     cpu         = "1.0"
     memory      = "1.0"
     ports {
