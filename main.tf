@@ -11,6 +11,20 @@ provider "azurerm" {
   features {}
 }
 
+terraform {
+  backend "azurerm" {
+    resource_group_name = "tf_api_blobstorage"
+    storage_account_name = "aztfweatherblobstorage"
+    container_name = "tfstatefile"
+    key = "terraform.tfstate"
+  }
+}
+
+variable "imagebuild" {
+  type=string
+  description="Latest Image Build"
+}
+
 resource "azurerm_resource_group" "tf_api_test" {
   name = "tfmainapirg"
   location = "West US 2"
@@ -27,7 +41,7 @@ resource "azurerm_container_group" "tfcg_api_test" {
 
   container {
     name        = "weatherapi"
-    image       = "luisenalvar/aztfweatherapi"
+    image       = "luisenalvar/aztfweatherapi:${var.imagebuild}"
     cpu         = "1.0"
     memory      = "1.0"
     ports {

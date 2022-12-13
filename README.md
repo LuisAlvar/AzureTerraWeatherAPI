@@ -51,6 +51,15 @@ az config set auto-upgrade.enable=yes
 ```
 
 # Terraform 
+Different types of file 
+- Main.tf 
+  -  holds terraform configuration code
+- Terraform.tfvars 
+  - use to hold variables
+- Terraform.tfstate
+  - used to map plan resources to running resources
+  
+
 Once sign-in to the Azure CLI, we can start creating the main terraform file.
 ```tf
 terraform {
@@ -188,6 +197,7 @@ Then you reload the file via **source ~/.bash_profile**
 
 Now you can run terraform plan only and you will get a outlay back. 
 
+
 ## Azure DevOps Pipeline 
 Create a [new project](https://dev.azure.com/) under project settings. 
 
@@ -196,3 +206,80 @@ Create a **Docker Registry** service connection
 * provider you username and password and verify 
 Create a **Azure Resoruce Manager** service connection
 * follow the same process 
+
+Next, go to Pipeline and create a new pipeline. 
+Select where your remote repo provider for example Github
+and then if you are already signed in then you will the repo for this project. Under the configure select Docker and add a task selct docker to build and push. 
+
+
+Tagging Docker images 
+<DockerUserId> / <ImageName>:Version 
+
+```docker 
+# Docker
+
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- main
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'Docker Hub (luisenalvar)'
+        repository: 'luisenalvar/aztfweatherapi'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          $(tag)
+```
+Now that we have establish a devops pipeline with a single task to build and push a docker image to docker hub. We are half way there. We need to add the terraform part. 
+
+### Terraform 
+Next under the pipeline go to > Library and add a 
+variable group and add all of the environemnt variable for terraform. 
+ARM_SUBSCRIPTION_ID 
+ARM_CLIENT_SECRET
+ARM_CLIENT_ID 
+ARM_TENANT_ID
+
+When we run terraform apply the .tfstate will save our current state of the build. So, we will need to store this file somewhere in Azure. 
+
+First, we will need to manually create a resource group for this particular part. Next, the main object we will use is a **Storage Account - blob, file, table, and queue** and add to our new resoruce group. 
+
+Once the storage account is deploy, then we will add a new container. I will call it tfstatefile and have the mode set to private. 
+
+on the main.tf we will make the following additions
+
+```tf
+terraform {
+  backend "azurerm" {
+    resource_group_name = "tf_api_blobstorage"
+    storage_account_name = "aztfweatherblobstorage"
+    container_name = "tfstatefile"
+    key = "terraform.tfstate"
+  }
+}
+```
+
+Now is time to add Terraform to the DevOps pipeline 
+
+
+Homework: 
+* will running terraform at the command line work now 
+* the name of iamge name is hard-coded in 2 places
