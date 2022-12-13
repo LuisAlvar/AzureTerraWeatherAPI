@@ -4,7 +4,12 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- main
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - *.md
 
 resources:
 - repo: self
@@ -29,26 +34,29 @@ stages:
         Dockerfile: '**/Dockerfile'
         tags: |
           $(tag)
-- stage: Deploy  
-  displayName: 'Azure Provision of Resources ...'
-  dependsOn: Build
-  jobs:
-  - job: AppDeployment 
-    displayName: 'Create a App Container Instance'
-    pool:
-      vmImage: ubuntu-latest
-    variables:
-    - group: TerraformServicePrincipalEnvVars
-    steps:
-    - script: |
-        set -e
-        terraform init -input=false
-        terraform apply -input=false -auto-approve
-      name: Terraform 
-      displayName: 'Running Terraform  ...'
-      env:
-        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-        ARM_TENANT_ID: $(ARM_TENANT_ID)
-        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
-        TF_VAR_imagebuild: $(tag)
+## Terraform Task 
+## Disable for now
+
+# - stage: Deploy  
+#   displayName: 'Azure Provision of Resources ...'
+#   dependsOn: Build
+#   jobs:
+#   - job: AppDeployment 
+#     displayName: 'Create a App Container Instance'
+#     pool:
+#       vmImage: ubuntu-latest
+#     variables:
+#     - group: TerraformServicePrincipalEnvVars
+#     steps:
+#     - script: |
+#         set -e
+#         terraform init -input=false
+#         terraform apply -input=false -auto-approve
+#       name: Terraform 
+#       displayName: 'Running Terraform  ...'
+#       env:
+#         ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+#         ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+#         ARM_TENANT_ID: $(ARM_TENANT_ID)
+#         ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+#         TF_VAR_imagebuild: $(tag)

@@ -17,7 +17,7 @@ docker run -p 8080:80 weatherapi  ## to create a container and provide the port 
 docker push ##Pushing the image to Docker Hub
 ```
 
-Since we are going to utilize the docker image to deploy to Azure. 
+Since we are manually going to utilize the docker image to deploy to Azure. 
 We need to push the final image as an amd64 only [Mainly for Apple ARM systems]
 ```bash
  docker build --platform linux/amd64 --tag weatherapi . 
@@ -29,7 +29,7 @@ a-z0-9]([-a-z0-9]*[a-z0-9])?
 ```
 
 # Azure CLI
-On you have installed the Azure CLi run the following command to confirm
+Once you have installed the Azure CLI run the following command to confirm
 ```bash 
 az --version
 ```
@@ -195,10 +195,12 @@ Then you reload the file via **source ~/.bash_profile**
 
 [For Windows]
 
-Now you can run terraform plan only and you will get a outlay back. 
 
 
-## Azure DevOps Pipeline 
+Now you can run **terraform plan** only and you simply get the plan outline. 
+
+
+# Azure DevOps Pipeline 
 Create a [new project](https://dev.azure.com/) under project settings. 
 
 First go to Project Settings > click on Service connections
@@ -250,20 +252,23 @@ stages:
 ```
 Now that we have establish a devops pipeline with a single task to build and push a docker image to docker hub. We are half way there. We need to add the terraform part. 
 
-### Terraform 
+# Add Terraform to DevOps Pipeline
 Next under the pipeline go to > Library and add a 
 variable group and add all of the environemnt variable for terraform. 
+
+```bash
 ARM_SUBSCRIPTION_ID 
 ARM_CLIENT_SECRET
 ARM_CLIENT_ID 
 ARM_TENANT_ID
+```
 
 When we run terraform apply the .tfstate will save our current state of the build. So, we will need to store this file somewhere in Azure. 
 
-First, we will need to manually create a resource group for this particular part. Next, the main object we will use is a **Storage Account - blob, file, table, and queue** and add to our new resoruce group. 
+First, we will need to manually create a resource group for this particular part. 
+Next, the main object we will use is a **Storage Account - blob, file, table, and queue** and add to our new resoruce group. 
 
 Once the storage account is deploy, then we will add a new container. I will call it tfstatefile and have the mode set to private. 
-
 on the main.tf we will make the following additions
 
 ```tf
@@ -279,6 +284,44 @@ terraform {
 
 Now is time to add Terraform to the DevOps pipeline 
 
+```
+# - stage: Deploy  
+#   displayName: 'Azure Provision of Resources ...'
+#   dependsOn: Build
+#   jobs:
+#   - job: AppDeployment 
+#     displayName: 'Create a App Container Instance'
+#     pool:
+#       vmImage: ubuntu-latest
+#     variables:
+#     - group: TerraformServicePrincipalEnvVars
+#     steps:
+#     - script: |
+#         set -e
+#         terraform init -input=false
+#         terraform apply -input=false -auto-approve
+#       name: Terraform 
+#       displayName: 'Running Terraform  ...'
+#       env:
+#         ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+#         ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+#         ARM_TENANT_ID: $(ARM_TENANT_ID)
+#         ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+#         TF_VAR_imagebuild: $(tag)
+```
+
+ TF_VAR_imagebuild: $(tag) <--- from Azure pipeline will pass down this value to the main.tf file via variable "imagebuild"
+
+variable "imagebuild" {
+  type=string
+  description="Latest Image Build"
+}
+
+resource "azurerm_container_group" "tfcg_api_test" {
+    ...
+    image       = "luisenalvar/aztfweatherapi:${var.imagebuild}"
+    ...
+}
 
 Homework: 
 * will running terraform at the command line work now 
