@@ -9,7 +9,7 @@ trigger:
       - main
   paths:
     exclude:
-      - *.md
+      - README.md
 
 resources:
 - repo: self
